@@ -55,10 +55,7 @@ fi
 
 # 3) Ambiente-raiz (agentes em ~/Noha) — só monta se você é dono e tem o noha-os.
 if [ "$TEM_OS" = "1" ]; then
-  mkdir -p "$HOME/Noha/.claude/agents" "$HOME/Noha/.claude/skills"
-  cp "$HOME/Noha/os/agentes/"*.md "$HOME/Noha/.claude/agents/"
-  cp "$HOME/Noha/os/agentes/auditores/"*.md "$HOME/Noha/.claude/agents/" 2>/dev/null || true
-  cp -R "$HOME/Noha/os/skills/universais/." "$HOME/Noha/.claude/skills/" 2>/dev/null || true
+  # Os agentes vêm do plugin "noha" (instalado acima) — não copiamos mais na mão.
   cp "$HOME/Noha/os/templates/ambiente/CLAUDE.md" "$HOME/Noha/CLAUDE.md"
   echo ""
   # Produtos próprios da Noha (ferramentas da agência) — clone raso p/ não inchar.
