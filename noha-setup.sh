@@ -57,6 +57,10 @@ fi
 if [ "$TEM_OS" = "1" ]; then
   # Os agentes vêm do plugin "noha" (instalado acima) — não copiamos mais na mão.
   cp "$HOME/Noha/os/templates/ambiente/CLAUDE.md" "$HOME/Noha/CLAUDE.md"
+  # Hooks do ambiente: sincroniza TUDO ao abrir/fechar (descobre contas novas, puxa, salva, envia)
+  mkdir -p "$HOME/Noha/.claude"
+  cp "$HOME/Noha/os/templates/ambiente/settings.json" "$HOME/Noha/.claude/settings.json"
+  chmod +x "$HOME/Noha/os/bin/"*.sh 2>/dev/null || true
   echo ""
   # Produtos próprios da Noha (ferramentas da agência) — clone raso p/ não inchar.
   mkdir -p "$HOME/Noha/produtos"
