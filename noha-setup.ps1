@@ -83,17 +83,24 @@ foreach ($repo in $contas) {
 if (Get-Command claude -ErrorAction SilentlyContinue) {
   Write-Host "Ativando plugins do time..."
   $falhou = @()
+  # ATENCAO: o nome do marketplace vem do marketplace.json dele, NAO do nome do
+  # repositorio -- e as vezes os dois diferem (claude-ads e ui-ux-pro-max abaixo).
+  # Conferir com: claude plugin marketplace add <repo>  (ele imprime o nome real).
   $tri = @(
-    @('thedotmack/claude-mem',                  'claude-mem@thedotmack',                'memoria entre sessoes'),
-    @('obra/superpowers-marketplace',           'superpowers@superpowers-marketplace',  'metodo de trabalho'),
-    @("$ORG/noha-plugin",                       'noha@noha',                            'agentes + skills da Noha'),
-    @('affaan-m/everything-claude-code',        'ecc@ecc',                              'skills de conteudo e pesquisa'),
-    @('AgriciDaniel/claude-ads',                'claude-ads@claude-ads',                'skills de midia paga (ads-*)'),
-    @('nextlevelbuilder/ui-ux-pro-max-skill',   'ui-ux-pro-max@ui-ux-pro-max',          'design de interface'),
-    @('pbakaus/impeccable',                     'impeccable@impeccable',                'linguagem de design de frontend')
+    @('thedotmack/claude-mem',                  'claude-mem@thedotmack',                        'memoria entre sessoes'),
+    @('obra/superpowers-marketplace',           'superpowers@superpowers-marketplace',          'metodo de trabalho'),
+    @("$ORG/noha-plugin",                       'noha@noha',                                    'agentes + skills da Noha'),
+    @('affaan-m/everything-claude-code',        'ecc@ecc',                                      'skills de conteudo e pesquisa'),
+    @('AgriciDaniel/claude-ads',                'claude-ads@ai-marketing-hub-claude-ads',       'skills de midia paga (ads-*)'),
+    @('nextlevelbuilder/ui-ux-pro-max-skill',   'ui-ux-pro-max@ui-ux-pro-max-skill',            'design de interface'),
+    @('pbakaus/impeccable',                     'impeccable@impeccable',                        'linguagem de design de frontend')
   )
   foreach ($t in $tri) {
+    $nomeMkt = $t[1].Split('@')[1]
     claude plugin marketplace add $t[0] *> $null
+    # `add` nao refaz o cache de um marketplace ja adicionado: sem este update,
+    # quem ja tinha a versao antiga instala a antiga de novo e o script diz "ok".
+    claude plugin marketplace update $nomeMkt *> $null
     claude plugin install $t[1] *> $null
     if ($LASTEXITCODE -eq 0) {
       Ok "  [ok] $($t[2])"

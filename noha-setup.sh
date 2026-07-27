@@ -63,18 +63,26 @@ fi
 if command -v claude >/dev/null 2>&1; then
   say "🧩 Ativando plugins do time…"
   FALHOU=""
-  # marketplace:plugin:rótulo
+  # repo:plugin@marketplace:rótulo
+  #
+  # ATENÇÃO: o nome do marketplace vem do marketplace.json dele, NÃO do nome do
+  # repositório — e às vezes os dois diferem (claude-ads e ui-ux-pro-max abaixo).
+  # Conferir com: claude plugin marketplace add <repo>  (ele imprime o nome real).
   for tri in \
     "thedotmack/claude-mem:claude-mem@thedotmack:memória entre sessões" \
     "obra/superpowers-marketplace:superpowers@superpowers-marketplace:método de trabalho" \
     "$ORG/noha-plugin:noha@noha:agentes + skills da Noha" \
     "affaan-m/everything-claude-code:ecc@ecc:skills de conteúdo e pesquisa" \
-    "AgriciDaniel/claude-ads:claude-ads@claude-ads:skills de mídia paga (ads-*)" \
-    "nextlevelbuilder/ui-ux-pro-max-skill:ui-ux-pro-max@ui-ux-pro-max:design de interface" \
+    "AgriciDaniel/claude-ads:claude-ads@ai-marketing-hub-claude-ads:skills de mídia paga (ads-*)" \
+    "nextlevelbuilder/ui-ux-pro-max-skill:ui-ux-pro-max@ui-ux-pro-max-skill:design de interface" \
     "pbakaus/impeccable:impeccable@impeccable:linguagem de design de frontend"
   do
     mkt="${tri%%:*}"; resto="${tri#*:}"; plug="${resto%%:*}"; rotulo="${resto#*:}"
+    nome_mkt="${plug#*@}"
     claude plugin marketplace add "$mkt" >/dev/null 2>&1
+    # `add` não refaz o cache de um marketplace já adicionado: sem este update,
+    # quem já tinha a versão antiga instala a antiga de novo e o script diz "ok".
+    claude plugin marketplace update "$nome_mkt" >/dev/null 2>&1
     if claude plugin install "$plug" >/dev/null 2>&1; then
       say "  ✅ $rotulo"
     else
