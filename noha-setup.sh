@@ -58,24 +58,71 @@ if [ -n "$CONTAS" ]; then
   done
 fi
 
-# --- 2.5) Plugins que fazem o Claude trabalhar melhor gastando MENOS token ---
+# --- 2.5) Plugins: agentes da Noha + as skills que eles mandam usar ----------
+# Cada passo reporta o desfecho REAL. Nada de dizer "pronto" quando falhou.
 if command -v claude >/dev/null 2>&1; then
-  say "🧩 Ativando plugins do time (noha + claude-mem + superpowers)…"
-  claude plugin marketplace add thedotmack/claude-mem        >/dev/null 2>&1 || true
-  claude plugin marketplace add obra/superpowers-marketplace >/dev/null 2>&1 || true
-  claude plugin marketplace add "$ORG/noha-plugin"           >/dev/null 2>&1 || true
-  claude plugin install claude-mem@thedotmack                >/dev/null 2>&1 || true
-  claude plugin install superpowers@superpowers-marketplace  >/dev/null 2>&1 || true
-  claude plugin install noha@noha                            >/dev/null 2>&1 || true
-  say "  ✅ plugins prontos (atualizam sozinhos)"
+  say "🧩 Ativando plugins do time…"
+  FALHOU=""
+  # marketplace:plugin:rótulo
+  for tri in \
+    "thedotmack/claude-mem:claude-mem@thedotmack:memória entre sessões" \
+    "obra/superpowers-marketplace:superpowers@superpowers-marketplace:método de trabalho" \
+    "$ORG/noha-plugin:noha@noha:agentes + skills da Noha" \
+    "affaan-m/everything-claude-code:ecc@ecc:skills de conteúdo e pesquisa" \
+    "AgriciDaniel/claude-ads:claude-ads@claude-ads:skills de mídia paga (ads-*)" \
+    "nextlevelbuilder/ui-ux-pro-max-skill:ui-ux-pro-max@ui-ux-pro-max:design de interface"
+  do
+    mkt="${tri%%:*}"; resto="${tri#*:}"; plug="${resto%%:*}"; rotulo="${resto#*:}"
+    claude plugin marketplace add "$mkt" >/dev/null 2>&1
+    if claude plugin install "$plug" >/dev/null 2>&1; then
+      say "  ✅ $rotulo"
+    else
+      say "  ❌ $rotulo — NÃO instalou ($plug)"
+      FALHOU="$FALHOU $plug"
+    fi
+  done
+  if [ -n "$FALHOU" ]; then
+    say ""
+    say "  ⚠️  Alguns plugins não instalaram:$FALHOU"
+    say "     Se um deles for 'noha@noha', você não vai receber os agentes nem as"
+    say "     skills da agência. Causa mais comum: falta acesso ao repo privado."
+    say "     Confira com:  gh repo view $ORG/noha-plugin"
+    say "     Se der 'not found', peça ao Rodrigo pra te adicionar ao time."
+  fi
+fi
+
+# --- 2.6) Motor do nohacopy (opcional: só quem tem acesso ao repo) -----------
+# A skill nohacopy vem no plugin e já funciona sem isto (modo leve). Este repo
+# adiciona o modo completo: transcrição de áudio na GPU e extração de frames.
+if [ -d "$HOME/Noha/nohacopy/.git" ]; then
+  git -C "$HOME/Noha/nohacopy" pull -q 2>/dev/null || say "  ⚠️  nohacopy: pull falhou (a gente resolve depois)"
+elif gh repo view "$ORG/nohacopy" >/dev/null 2>&1; then
+  if git clone -q "https://github.com/$ORG/nohacopy.git" "$HOME/Noha/nohacopy" 2>/dev/null; then
+    say "  ✍️  nohacopy: motor de copy baixado (modo completo)"
+    if ! command -v ffmpeg >/dev/null 2>&1; then
+      say "     ⚠️  falta ffmpeg pra transcrever áudio. Rode: brew install ffmpeg"
+    fi
+    say "     Para ativar a transcrição: pip install -r ~/Noha/nohacopy/requirements.txt"
+  fi
 fi
 
 # --- 3) Desfecho (3 casos, SEMPRE explícito) --------------------------------
 say ""
 if [ "$TEM_OS" = "1" ]; then
-  cp "$HOME/Noha/os/templates/ambiente/CLAUDE.md"      "$HOME/Noha/CLAUDE.md"              2>/dev/null || true
+  # Estes dois arquivos são sobrescritos pelo template. Guarda cópia antes —
+  # quem ajustou algo à mão não perde o trabalho sem aviso.
   mkdir -p "$HOME/Noha/.claude"
-  cp "$HOME/Noha/os/templates/ambiente/settings.json"  "$HOME/Noha/.claude/settings.json"  2>/dev/null || true
+  for alvo in "$HOME/Noha/CLAUDE.md" "$HOME/Noha/.claude/settings.json"; do
+    case "$alvo" in
+      *CLAUDE.md)     origem="$HOME/Noha/os/templates/ambiente/CLAUDE.md";;
+      *settings.json) origem="$HOME/Noha/os/templates/ambiente/settings.json";;
+    esac
+    [ -f "$origem" ] || continue
+    if [ -f "$alvo" ] && ! cmp -s "$alvo" "$origem"; then
+      cp "$alvo" "$alvo.bak" 2>/dev/null && say "  💾 backup: $(basename "$alvo") → $(basename "$alvo").bak (tinha ajuste local)"
+    fi
+    cp "$origem" "$alvo" 2>/dev/null || true
+  done
   chmod +x "$HOME/Noha/os/bin/"*.sh 2>/dev/null || true
   mkdir -p "$HOME/Noha/produtos"
   for par in "dash:noha-ads-manager-v2" "nohaverso:nohaverso" "content-engine:noha-content" "ai-creator:ai-creator-engine"; do

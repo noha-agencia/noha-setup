@@ -76,24 +76,81 @@ foreach ($repo in $contas) {
   }
 }
 
-# --- 2.5) Plugins (agentes + memoria + metodo) ------------------------------
+# --- 2.5) Plugins: agentes da Noha + as skills que eles mandam usar ----------
+# Cada passo reporta o desfecho REAL. Nada de dizer "pronto" quando falhou.
 if (Get-Command claude -ErrorAction SilentlyContinue) {
-  Write-Host "Ativando plugins do time (noha + claude-mem + superpowers)..."
-  claude plugin marketplace add thedotmack/claude-mem        *> $null
-  claude plugin marketplace add obra/superpowers-marketplace *> $null
-  claude plugin marketplace add "$ORG/noha-plugin"           *> $null
-  claude plugin install claude-mem@thedotmack                *> $null
-  claude plugin install superpowers@superpowers-marketplace  *> $null
-  claude plugin install noha@noha                            *> $null
-  Ok "  [ok] plugins prontos (atualizam sozinhos)"
+  Write-Host "Ativando plugins do time..."
+  $falhou = @()
+  $tri = @(
+    @('thedotmack/claude-mem',                  'claude-mem@thedotmack',                'memoria entre sessoes'),
+    @('obra/superpowers-marketplace',           'superpowers@superpowers-marketplace',  'metodo de trabalho'),
+    @("$ORG/noha-plugin",                       'noha@noha',                            'agentes + skills da Noha'),
+    @('affaan-m/everything-claude-code',        'ecc@ecc',                              'skills de conteudo e pesquisa'),
+    @('AgriciDaniel/claude-ads',                'claude-ads@claude-ads',                'skills de midia paga (ads-*)'),
+    @('nextlevelbuilder/ui-ux-pro-max-skill',   'ui-ux-pro-max@ui-ux-pro-max',          'design de interface')
+  )
+  foreach ($t in $tri) {
+    claude plugin marketplace add $t[0] *> $null
+    claude plugin install $t[1] *> $null
+    if ($LASTEXITCODE -eq 0) {
+      Ok "  [ok] $($t[2])"
+    } else {
+      Write-Host "  [X] $($t[2]) - NAO instalou ($($t[1]))"
+      $falhou += $t[1]
+    }
+  }
+  if ($falhou.Count -gt 0) {
+    Write-Host ""
+    Write-Host "  [!] Alguns plugins nao instalaram: $($falhou -join ' ')"
+    Write-Host "      Se um deles for 'noha@noha', voce nao vai receber os agentes nem"
+    Write-Host "      as skills da agencia. Causa mais comum: falta acesso ao repo privado."
+    Write-Host "      Confira com:  gh repo view $ORG/noha-plugin"
+    Write-Host "      Se der 'not found', peca ao Rodrigo pra te adicionar ao time."
+  }
+}
+
+# --- 2.6) Motor do nohacopy (opcional: so quem tem acesso ao repo) -----------
+# A skill nohacopy vem no plugin e ja funciona sem isto (modo leve). Este repo
+# adiciona o modo completo: transcricao de audio na GPU e extracao de frames.
+$copyDir = Join-Path $base 'nohacopy'
+if (Test-Path (Join-Path $copyDir '.git')) {
+  git -C $copyDir pull -q 2>$null
+} else {
+  gh repo view "$ORG/nohacopy" 1>$null 2>$null
+  if ($LASTEXITCODE -eq 0) {
+    git clone -q "https://github.com/$ORG/nohacopy.git" $copyDir 2>$null
+    if (Test-Path (Join-Path $copyDir '.git')) {
+      Ok "  [ok] nohacopy: motor de copy baixado (modo completo)"
+      if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
+        Write-Host "     [!] falta ffmpeg pra transcrever audio. Rode: winget install Gyan.FFmpeg"
+      }
+      Write-Host "     Para ativar a transcricao: pip install -r $copyDir\requirements.txt"
+    }
+  }
 }
 
 # --- 3) Desfecho (3 casos, SEMPRE explicito) --------------------------------
 Write-Host ""
 if ($temOs) {
-  Copy-Item (Join-Path $osDir 'templates\ambiente\CLAUDE.md')     (Join-Path $base 'CLAUDE.md')          -Force -ErrorAction SilentlyContinue
+  # Estes dois arquivos sao sobrescritos pelo template. Guarda copia antes --
+  # quem ajustou algo a mao nao perde o trabalho sem aviso.
   New-Item -ItemType Directory -Force -Path (Join-Path $base '.claude') | Out-Null
-  Copy-Item (Join-Path $osDir 'templates\ambiente\settings.json') (Join-Path $base '.claude\settings.json') -Force -ErrorAction SilentlyContinue
+  $pares = @(
+    @((Join-Path $osDir 'templates\ambiente\CLAUDE.md'),     (Join-Path $base 'CLAUDE.md')),
+    @((Join-Path $osDir 'templates\ambiente\settings.json'), (Join-Path $base '.claude\settings.json'))
+  )
+  foreach ($p in $pares) {
+    $origem = $p[0]; $alvo = $p[1]
+    if (-not (Test-Path $origem)) { continue }
+    if (Test-Path $alvo) {
+      $difere = (Get-FileHash $alvo).Hash -ne (Get-FileHash $origem).Hash
+      if ($difere) {
+        Copy-Item $alvo "$alvo.bak" -Force -ErrorAction SilentlyContinue
+        Write-Host "  [i] backup: $(Split-Path $alvo -Leaf) -> $(Split-Path $alvo -Leaf).bak (tinha ajuste local)"
+      }
+    }
+    Copy-Item $origem $alvo -Force -ErrorAction SilentlyContinue
+  }
   $produtosDir = Join-Path $base 'produtos'
   New-Item -ItemType Directory -Force -Path $produtosDir | Out-Null
   foreach ($par in @('dash:noha-ads-manager-v2','nohaverso:nohaverso','content-engine:noha-content','ai-creator:ai-creator-engine')) {
