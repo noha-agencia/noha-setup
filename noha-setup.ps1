@@ -72,7 +72,9 @@ foreach ($repo in $contas) {
   } else {
     git clone -q "https://github.com/$ORG/$repo.git" $pasta 2>$null
     if ($LASTEXITCODE -eq 0) { Ok "  [ok] $repo"; $n++ }
-    else { Warn "  [!] $repo: nao consegui baixar (acesso?) - sigo com o resto" }
+    # ${repo} com chaves: "$repo:" o PowerShell le como qualificador de escopo
+    # (igual $env:PATH) e o arquivo inteiro deixa de compilar.
+    else { Warn "  [!] ${repo}: nao consegui baixar (acesso?) - sigo com o resto" }
   }
 }
 
