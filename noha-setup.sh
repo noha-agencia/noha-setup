@@ -70,7 +70,8 @@ if command -v claude >/dev/null 2>&1; then
     "$ORG/noha-plugin:noha@noha:agentes + skills da Noha" \
     "affaan-m/everything-claude-code:ecc@ecc:skills de conteúdo e pesquisa" \
     "AgriciDaniel/claude-ads:claude-ads@claude-ads:skills de mídia paga (ads-*)" \
-    "nextlevelbuilder/ui-ux-pro-max-skill:ui-ux-pro-max@ui-ux-pro-max:design de interface"
+    "nextlevelbuilder/ui-ux-pro-max-skill:ui-ux-pro-max@ui-ux-pro-max:design de interface" \
+    "pbakaus/impeccable:impeccable@impeccable:linguagem de design de frontend"
   do
     mkt="${tri%%:*}"; resto="${tri#*:}"; plug="${resto%%:*}"; rotulo="${resto#*:}"
     claude plugin marketplace add "$mkt" >/dev/null 2>&1

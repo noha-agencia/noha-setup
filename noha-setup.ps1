@@ -89,7 +89,8 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
     @("$ORG/noha-plugin",                       'noha@noha',                            'agentes + skills da Noha'),
     @('affaan-m/everything-claude-code',        'ecc@ecc',                              'skills de conteudo e pesquisa'),
     @('AgriciDaniel/claude-ads',                'claude-ads@claude-ads',                'skills de midia paga (ads-*)'),
-    @('nextlevelbuilder/ui-ux-pro-max-skill',   'ui-ux-pro-max@ui-ux-pro-max',          'design de interface')
+    @('nextlevelbuilder/ui-ux-pro-max-skill',   'ui-ux-pro-max@ui-ux-pro-max',          'design de interface'),
+    @('pbakaus/impeccable',                     'impeccable@impeccable',                'linguagem de design de frontend')
   )
   foreach ($t in $tri) {
     claude plugin marketplace add $t[0] *> $null
