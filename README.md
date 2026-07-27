@@ -5,6 +5,6 @@ login GitHub da própria pessoa (`gh`), as contas de cliente a que ela tem acess
 
 **Uso (uma vez):**
 ```
-bash <(curl -fsSL https://raw.githubusercontent.com/NohaConnect/noha-setup/main/noha-setup.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/noha-agencia/noha-setup/main/noha-setup.sh)
 ```
 Depois: abra o Claude Code dentro da pasta do cliente em `~/Noha/contas/`.
